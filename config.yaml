@@ -1,0 +1,15 @@
+extensions:
+  - go
+  - js
+  - py
+  - java
+  - yaml
+  - yml
+ignore:
+  - .git/
+  - vendor/
+  - node_modules/
+  - "*.min.js"
+  - dist/
+  - bin/
+  - result/
