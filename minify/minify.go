@@ -1,3 +1,15 @@
+// Package minify writes a compressed project dump with line maps for AI review.
+//
+// Output format per file:
+//
+//	@FILE <relpath>
+//	@ORIG 1-<n>
+//	@MAP 1>3,2>4,...
+//	<stripped lines>
+//
+// Comments and blank lines are removed by Strip while keeping logic and
+// identifiers. @MAP out>orig means dump body line "out" came from original
+// source line "orig". Numbering resets for every @FILE block.
 package minify
 
 import (
@@ -10,7 +22,9 @@ import (
 	"golanganalyzer/internal/collect"
 )
 
-// Minify writes a compressed dump of sourcePath into targetFile with line maps.
+// Minify loads config.yaml from the working directory and writes a minified dump
+// of sourcePath into targetFile. Parent directories of targetFile are created
+// if needed.
 func Minify(sourcePath, targetFile string) error {
 	cfg, err := config.Load(defaultConfigPath())
 	if err != nil {
@@ -19,7 +33,8 @@ func Minify(sourcePath, targetFile string) error {
 	return MinifyWithConfig(sourcePath, targetFile, cfg)
 }
 
-// MinifyWithConfig is Minify using an already-loaded config.
+// MinifyWithConfig is Minify using an already-loaded config (used by the CLI
+// after parsing --config).
 func MinifyWithConfig(sourcePath, targetFile string, cfg *config.Config) error {
 	files, err := collect.Collect(sourcePath, cfg)
 	if err != nil {

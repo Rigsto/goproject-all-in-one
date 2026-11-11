@@ -1,3 +1,8 @@
+// Package collect walks a source tree and returns text files that match the
+// configured extensions and are not excluded by ignore rules.
+//
+// It is shared by flatten and minify. Results are sorted by slash-separated
+// relative path. Files containing a NUL byte are treated as binary and skipped.
 package collect
 
 import (
@@ -11,13 +16,18 @@ import (
 	"golanganalyzer/config"
 )
 
-// File is a collected source file ready for writing.
+// File is a collected source file ready for writing into a dump.
 type File struct {
+	// RelPath is the path relative to the source root, using forward slashes.
 	RelPath string
+
+	// Content is the raw file bytes as read from disk.
 	Content []byte
 }
 
-// Collect walks sourcePath and returns matching text files in sorted order.
+// Collect walks sourcePath and returns matching text files in sorted RelPath order.
+// sourcePath must be an existing directory. cfg.Extensions and cfg.Ignore control
+// inclusion; directory ignore matches cause filepath.SkipDir.
 func Collect(sourcePath string, cfg *config.Config) ([]File, error) {
 	absSource, err := filepath.Abs(sourcePath)
 	if err != nil {
@@ -91,6 +101,7 @@ func Collect(sourcePath string, cfg *config.Config) ([]File, error) {
 	return files, nil
 }
 
+// isBinary reports whether data looks binary by presence of a NUL byte.
 func isBinary(data []byte) bool {
 	for _, b := range data {
 		if b == 0 {

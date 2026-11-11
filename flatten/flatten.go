@@ -1,3 +1,13 @@
+// Package flatten writes a full-source project dump for AI review.
+//
+// Output format per file:
+//
+//	===== FILE <relpath> | LINES 1-<n>
+//	<source body>
+//
+// Body line N is original source line N. Newlines are normalized to \n; a
+// trailing newline is ensured after each file body. Paths are relative to the
+// --source root and sorted by collect.Collect.
 package flatten
 
 import (
@@ -10,7 +20,9 @@ import (
 	"golanganalyzer/internal/collect"
 )
 
-// Flatten writes a full-source dump of sourcePath into targetFile.
+// Flatten loads config.yaml from the working directory and writes a full-source
+// dump of sourcePath into targetFile. Parent directories of targetFile are created
+// if needed.
 func Flatten(sourcePath, targetFile string) error {
 	cfg, err := config.Load(defaultConfigPath())
 	if err != nil {
@@ -19,7 +31,8 @@ func Flatten(sourcePath, targetFile string) error {
 	return FlattenWithConfig(sourcePath, targetFile, cfg)
 }
 
-// FlattenWithConfig is Flatten using an already-loaded config.
+// FlattenWithConfig is Flatten using an already-loaded config (used by the CLI
+// after parsing --config).
 func FlattenWithConfig(sourcePath, targetFile string, cfg *config.Config) error {
 	files, err := collect.Collect(sourcePath, cfg)
 	if err != nil {

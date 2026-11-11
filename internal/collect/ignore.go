@@ -5,7 +5,15 @@ import (
 	"strings"
 )
 
-// Matcher applies gitignore-like path rules.
+// Matcher applies simple gitignore-like path rules from config ignore entries.
+//
+// Supported shapes:
+//   - "name/"     — directory (and its contents) by basename or path prefix
+//   - "path/seg"  — exact relative path or prefix path/seg/
+//   - "*.min.js"  — basename or full-path glob via filepath.Match
+//
+// Blank lines and rules starting with "#" are skipped. Matching uses
+// slash-separated paths relative to the source root.
 type Matcher struct {
 	patterns []pattern
 }
@@ -18,7 +26,8 @@ type pattern struct {
 	suffix string
 }
 
-// NewMatcher builds a matcher from config ignore rules.
+// NewMatcher builds a Matcher from config ignore rules. Invalid or empty rules
+// are skipped; globs are detected by the presence of *, ?, or [.
 func NewMatcher(rules []string) *Matcher {
 	m := &Matcher{}
 	for _, rule := range rules {
@@ -43,8 +52,9 @@ func NewMatcher(rules []string) *Matcher {
 	return m
 }
 
-// Match reports whether relPath (slash-separated, relative to source root) should be ignored.
-// isDir is true when the path is a directory.
+// Match reports whether relPath should be ignored.
+// relPath must be slash-separated and relative to the source root.
+// isDir is true when the path is a directory (enables SkipDir for dir rules).
 func (m *Matcher) Match(relPath string, isDir bool) bool {
 	relPath = strings.ReplaceAll(relPath, "\\", "/")
 	relPath = strings.TrimPrefix(relPath, "./")

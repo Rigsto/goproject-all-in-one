@@ -6,14 +6,26 @@ import (
 	"unicode"
 )
 
-// StripResult is minified text plus a map from output line -> original line.
+// StripResult is minified text plus a map from output line to original line.
 type StripResult struct {
+	// Lines are the kept source lines after comment/blank stripping (trailing
+	// whitespace trimmed). Index i corresponds to dump body line i+1.
 	Lines []string
-	Map   []int // Map[outLineIndex] = original 1-based line
+
+	// Map holds the original 1-based line number for each entry in Lines.
+	// Map[i] is the original line for Lines[i] (dump line i+1).
+	Map []int
 }
 
 // Strip removes comments and blank lines while preserving logic and identifiers.
-// One kept source line becomes one output line. map entries are 1-based.
+//
+// One kept source line becomes one output line. Map entries are 1-based original
+// line numbers. Comment styles:
+//   - // and /* */ for all extensions
+//   - # for py, yaml, and yml (hashComments)
+//
+// String literals (including Go raw `...` and Python """ / ''') are preserved
+// so comment markers inside them are not stripped.
 func Strip(src string, ext string) StripResult {
 	src = strings.ReplaceAll(src, "\r\n", "\n")
 	src = strings.ReplaceAll(src, "\r", "\n")
@@ -197,7 +209,9 @@ func stripComments(src string, hashComments bool) string {
 	return b.String()
 }
 
-// FormatMap builds "1>3,2>4,..." from 1-based map entries.
+// FormatMap builds an "@MAP" payload "1>3,2>4,..." from 1-based original line
+// numbers. Index i in m becomes dump line i+1 mapped to original line m[i].
+// An empty map yields an empty string.
 func FormatMap(m []int) string {
 	if len(m) == 0 {
 		return ""

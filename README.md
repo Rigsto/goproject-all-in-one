@@ -129,6 +129,38 @@ golanganalyzer/
 └── result/              # default output dir (gitignored)
 ```
 
+## Architecture
+
+```text
+CLI (main.go)
+  │  --config → config.Load
+  │  --source / --out
+  ├─ flatten → flatten.FlattenWithConfig
+  └─ minify  → minify.MinifyWithConfig
+                    │
+                    ▼
+            collect.Collect
+              • WalkDir from --source
+              • keep cfg.Extensions
+              • skip cfg.Ignore (+ binary / NUL)
+                    │
+         ┌──────────┴──────────┐
+         ▼                     ▼
+   flatten writer         minify writer
+   ===== FILE …           @FILE / @ORIG / @MAP
+   full body              Strip + FormatMap
+```
+
+| Package | Role |
+|---------|------|
+| `main` | Cobra CLI; loads config, dispatches flatten/minify, prints the output path |
+| [`config`](config/config.go) | Parse/validate `config.yaml` (`extensions`, `ignore`) |
+| [`internal/collect`](internal/collect/collect.go) | Shared tree walk, ignore matching, sorted file list |
+| [`flatten`](flatten/flatten.go) | Full-source dump; body line N = original line N |
+| [`minify`](minify/minify.go) | Stripped dump; [`Strip`](minify/strip.go) builds `@MAP` |
+
+Package and exported APIs have Go doc comments (`go doc ./...`).
+
 ## License
 
 Use and modify as needed for your own analysis workflows.

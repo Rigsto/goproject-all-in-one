@@ -1,3 +1,9 @@
+// Package config loads and validates the YAML settings that control which
+// files flatten and minify include.
+//
+// The default file is config.yaml at the process working directory. Extensions
+// are normalized (leading dots stripped, lowercased). Ignore rules are passed
+// through to internal/collect for gitignore-like matching.
 package config
 
 import (
@@ -10,11 +16,17 @@ import (
 
 // Config holds flatten/minify settings loaded from config.yaml.
 type Config struct {
+	// Extensions is the allow-list of file suffixes to collect (e.g. "go", "py").
+	// Dots are optional in YAML; Load strips them and lowercases values.
 	Extensions []string `yaml:"extensions"`
-	Ignore     []string `yaml:"ignore"`
+
+	// Ignore is a list of gitignore-like path rules (directory names ending in "/",
+	// basename globs like "*.min.js", or relative path prefixes).
+	Ignore []string `yaml:"ignore"`
 }
 
-// Load reads and validates a YAML config file.
+// Load reads path as YAML, validates that Extensions is non-empty, normalizes
+// extension strings, and returns the config. The file must exist and parse as YAML.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
