@@ -35,25 +35,13 @@ prompt/minify/ that matches the command you ran.`,
 	}
 
 	var configPath string
-	root.PersistentFlags().StringVar(&configPath, "config", "config.yaml", "path to config.yaml")
+	root.PersistentFlags().StringVar(&configPath, "config", config.DefaultPath, "path to config.yaml")
 
-	root.AddCommand(newFlattenCmd(&configPath))
-	root.AddCommand(newMinifyCmd(&configPath))
-
-	if err := root.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
-
-func newFlattenCmd(configPath *string) *cobra.Command {
-	var source string
-	var out string
-
-	cmd := &cobra.Command{
-		Use:   "flatten",
-		Short: "Write a full-source flatten dump for AI analysis",
-		Long: `Walk --source and write a full-source dump.
+	root.AddCommand(newDumpCmd(
+		&configPath,
+		"flatten",
+		"Write a full-source flatten dump for AI analysis",
+		`Walk --source and write a full-source dump.
 
 Each file is introduced with:
   ===== FILE <relpath> | LINES 1-<n>
@@ -61,39 +49,14 @@ Each file is introduced with:
 The body is unchanged (aside from normalizing newlines). Dump body line N is
 original source line N, so AI citations need no map. Pair with prompts under
 prompt/flatten/.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if source == "" {
-				return fmt.Errorf("--source is required")
-			}
-			if out == "" {
-				out = filepath.Join("result", "flatten.txt")
-			}
-			cfg, err := config.Load(*configPath)
-			if err != nil {
-				return err
-			}
-			if err := flatten.FlattenWithConfig(source, out, cfg); err != nil {
-				return err
-			}
-			fmt.Printf("wrote %s\n", out)
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVar(&source, "source", "", "source project directory")
-	cmd.Flags().StringVar(&out, "out", "", "output file (default: result/flatten.txt)")
-	_ = cmd.MarkFlagRequired("source")
-	return cmd
-}
-
-func newMinifyCmd(configPath *string) *cobra.Command {
-	var source string
-	var out string
-
-	cmd := &cobra.Command{
-		Use:   "minify",
-		Short: "Write a minified dump with line maps for AI analysis",
-		Long: `Walk --source and write a comment-stripped dump with line maps.
+		filepath.Join("result", "flatten.txt"),
+		flatten.FlattenWithConfig,
+	))
+	root.AddCommand(newDumpCmd(
+		&configPath,
+		"minify",
+		"Write a minified dump with line maps for AI analysis",
+		`Walk --source and write a comment-stripped dump with line maps.
 
 Each file is introduced with:
   @FILE <relpath>
@@ -102,18 +65,37 @@ Each file is introduced with:
 
 @MAP out>orig maps each kept dump line to its original source line. Pair with
 prompts under prompt/minify/ so citations use original lines.`,
+		filepath.Join("result", "minify.txt"),
+		minify.MinifyWithConfig,
+	))
+
+	if err := root.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func newDumpCmd(
+	configPath *string,
+	name, short, long, defaultOut string,
+	run func(source, out string, cfg *config.Config) error,
+) *cobra.Command {
+	var source string
+	var out string
+
+	cmd := &cobra.Command{
+		Use:   name,
+		Short: short,
+		Long:  long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if source == "" {
-				return fmt.Errorf("--source is required")
-			}
 			if out == "" {
-				out = filepath.Join("result", "minify.txt")
+				out = defaultOut
 			}
 			cfg, err := config.Load(*configPath)
 			if err != nil {
 				return err
 			}
-			if err := minify.MinifyWithConfig(source, out, cfg); err != nil {
+			if err := run(source, out, cfg); err != nil {
 				return err
 			}
 			fmt.Printf("wrote %s\n", out)
@@ -122,7 +104,7 @@ prompts under prompt/minify/ so citations use original lines.`,
 	}
 
 	cmd.Flags().StringVar(&source, "source", "", "source project directory")
-	cmd.Flags().StringVar(&out, "out", "", "output file (default: result/minify.txt)")
+	cmd.Flags().StringVar(&out, "out", "", fmt.Sprintf("output file (default: %s)", defaultOut))
 	_ = cmd.MarkFlagRequired("source")
 	return cmd
 }

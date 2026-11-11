@@ -20,21 +20,12 @@ import (
 
 	"golanganalyzer/config"
 	"golanganalyzer/internal/collect"
+	"golanganalyzer/internal/text"
 )
 
-// Minify loads config.yaml from the working directory and writes a minified dump
-// of sourcePath into targetFile. Parent directories of targetFile are created
-// if needed.
-func Minify(sourcePath, targetFile string) error {
-	cfg, err := config.Load(defaultConfigPath())
-	if err != nil {
-		return err
-	}
-	return MinifyWithConfig(sourcePath, targetFile, cfg)
-}
-
-// MinifyWithConfig is Minify using an already-loaded config (used by the CLI
-// after parsing --config).
+// MinifyWithConfig writes a minified dump of sourcePath into targetFile using
+// an already-loaded config (used by the CLI after parsing --config).
+// Parent directories of targetFile are created if needed.
 func MinifyWithConfig(sourcePath, targetFile string, cfg *config.Config) error {
 	files, err := collect.Collect(sourcePath, cfg)
 	if err != nil {
@@ -48,17 +39,8 @@ func MinifyWithConfig(sourcePath, targetFile string, cfg *config.Config) error {
 	var b strings.Builder
 	for i, f := range files {
 		ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(f.RelPath)), ".")
-		raw := string(f.Content)
-		raw = strings.ReplaceAll(raw, "\r\n", "\n")
-		raw = strings.TrimSuffix(raw, "\n")
-		endLine := 0
-		if raw != "" {
-			endLine = strings.Count(raw, "\n") + 1
-		}
-		startLine := 0
-		if endLine > 0 {
-			startLine = 1
-		}
+		raw := text.NormalizeNewlines(string(f.Content))
+		startLine, endLine := text.LineSpan(raw)
 
 		stripped := Strip(raw, ext)
 
@@ -78,8 +60,4 @@ func MinifyWithConfig(sourcePath, targetFile string, cfg *config.Config) error {
 		return fmt.Errorf("write output: %w", err)
 	}
 	return nil
-}
-
-func defaultConfigPath() string {
-	return "config.yaml"
 }

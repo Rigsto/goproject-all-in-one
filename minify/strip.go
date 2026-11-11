@@ -24,7 +24,7 @@ type StripResult struct {
 //   - // and /* */ for all extensions
 //   - # for py, yaml, and yml (hashComments)
 //
-// String literals (including Go raw `...` and Python """ / ''') are preserved
+// String literals (including Go raw `...` and Python """ / ”') are preserved
 // so comment markers inside them are not stripped.
 func Strip(src string, ext string) StripResult {
 	src = strings.ReplaceAll(src, "\r\n", "\n")
@@ -71,14 +71,14 @@ func stripComments(src string, hashComments bool) string {
 			return 0
 		}
 		peek2 := func() (rune, rune) {
-			var a, b rune
+			var r1, r2 rune
 			if i+1 < n {
-				a = runes[i+1]
+				r1 = runes[i+1]
 			}
 			if i+2 < n {
-				b = runes[i+2]
+				r2 = runes[i+2]
 			}
-			return a, b
+			return r1, r2
 		}
 
 		if inLineComment {
@@ -98,8 +98,8 @@ func stripComments(src string, hashComments bool) string {
 		}
 
 		if inTripleDouble {
-			a, c := peek2()
-			if r == '"' && a == '"' && c == '"' {
+			r1, r2 := peek2()
+			if r == '"' && r1 == '"' && r2 == '"' {
 				b.WriteString(`"""`)
 				i += 2
 				inTripleDouble = false
@@ -110,8 +110,8 @@ func stripComments(src string, hashComments bool) string {
 		}
 
 		if inTripleSingle {
-			a, c := peek2()
-			if r == '\'' && a == '\'' && c == '\'' {
+			r1, r2 := peek2()
+			if r == '\'' && r1 == '\'' && r2 == '\'' {
 				b.WriteString(`'''`)
 				i += 2
 				inTripleSingle = false
@@ -157,14 +157,14 @@ func stripComments(src string, hashComments bool) string {
 
 		// not in string/comment
 		if hashComments {
-			a, c := peek2()
-			if r == '"' && a == '"' && c == '"' {
+			r1, r2 := peek2()
+			if r == '"' && r1 == '"' && r2 == '"' {
 				inTripleDouble = true
 				b.WriteString(`"""`)
 				i += 2
 				continue
 			}
-			if r == '\'' && a == '\'' && c == '\'' {
+			if r == '\'' && r1 == '\'' && r2 == '\'' {
 				inTripleSingle = true
 				b.WriteString(`'''`)
 				i += 2

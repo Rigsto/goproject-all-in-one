@@ -46,7 +46,7 @@ func Collect(sourcePath string, cfg *config.Config) ([]File, error) {
 	for _, ext := range cfg.Extensions {
 		extSet[ext] = struct{}{}
 	}
-	matcher := NewMatcher(cfg.Ignore)
+	matcher := newMatcher(cfg.Ignore)
 
 	var files []File
 	err = filepath.WalkDir(absSource, func(path string, d fs.DirEntry, walkErr error) error {
@@ -65,13 +65,13 @@ func Collect(sourcePath string, cfg *config.Config) ([]File, error) {
 		}
 
 		if d.IsDir() {
-			if matcher.Match(rel, true) {
+			if matcher.match(rel, true) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if matcher.Match(rel, false) {
+		if matcher.match(rel, false) {
 			return nil
 		}
 

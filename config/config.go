@@ -14,6 +14,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// DefaultPath is the config file used when --config is omitted.
+const DefaultPath = "config.yaml"
+
 // Config holds flatten/minify settings loaded from config.yaml.
 type Config struct {
 	// Extensions is the allow-list of file suffixes to collect (e.g. "go", "py").

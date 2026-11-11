@@ -18,21 +18,12 @@ import (
 
 	"golanganalyzer/config"
 	"golanganalyzer/internal/collect"
+	"golanganalyzer/internal/text"
 )
 
-// Flatten loads config.yaml from the working directory and writes a full-source
-// dump of sourcePath into targetFile. Parent directories of targetFile are created
-// if needed.
-func Flatten(sourcePath, targetFile string) error {
-	cfg, err := config.Load(defaultConfigPath())
-	if err != nil {
-		return err
-	}
-	return FlattenWithConfig(sourcePath, targetFile, cfg)
-}
-
-// FlattenWithConfig is Flatten using an already-loaded config (used by the CLI
-// after parsing --config).
+// FlattenWithConfig writes a full-source dump of sourcePath into targetFile
+// using an already-loaded config (used by the CLI after parsing --config).
+// Parent directories of targetFile are created if needed.
 func FlattenWithConfig(sourcePath, targetFile string, cfg *config.Config) error {
 	files, err := collect.Collect(sourcePath, cfg)
 	if err != nil {
@@ -45,17 +36,8 @@ func FlattenWithConfig(sourcePath, targetFile string, cfg *config.Config) error 
 
 	var b strings.Builder
 	for i, f := range files {
-		content := string(f.Content)
-		content = strings.ReplaceAll(content, "\r\n", "\n")
-		content = strings.TrimSuffix(content, "\n")
-		endLine := 0
-		if content != "" {
-			endLine = strings.Count(content, "\n") + 1
-		}
-		startLine := 0
-		if endLine > 0 {
-			startLine = 1
-		}
+		content := text.NormalizeNewlines(string(f.Content))
+		startLine, endLine := text.LineSpan(content)
 
 		if i > 0 {
 			b.WriteByte('\n')
@@ -71,8 +53,4 @@ func FlattenWithConfig(sourcePath, targetFile string, cfg *config.Config) error 
 		return fmt.Errorf("write output: %w", err)
 	}
 	return nil
-}
-
-func defaultConfigPath() string {
-	return "config.yaml"
 }
