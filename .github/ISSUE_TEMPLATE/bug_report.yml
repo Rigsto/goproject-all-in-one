@@ -1,0 +1,49 @@
+name: Bug report
+description: Something broken in GolangAnalyzer (CLI, dump format, or strip/ignore)
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Include enough detail to reproduce on a clean clone of `goproject-all-in-one`.
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Windows 10 / macOS 14 / Ubuntu 22.04
+    validations:
+      required: true
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      placeholder: output of `go version`
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command run
+      description: Exact CLI invocation
+      placeholder: golanganalyzer minify --source ./myapp --out result/out.txt
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Paste errors or surprising dump snippets
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Tiny files, config.yaml snippet, or link to a branch

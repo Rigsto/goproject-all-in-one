@@ -1,39 +1,97 @@
 # GolangAnalyzer
 
-CLI that packs a source tree into one text dump so you can paste it into an AI chat for code review.
+[![CI](https://github.com/Rigsto/goproject-all-in-one/actions/workflows/ci.yml/badge.svg)](https://github.com/Rigsto/goproject-all-in-one/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go&logoColor=white)](https://go.dev/dl/)
 
-It walks a project, keeps only the extensions you care about, skips ignore rules, then writes either a **full-source flatten** or a **comment-stripped minify** (with line maps back to the original files). Ready-made prompts under `prompt/flatten/` and `prompt/minify/` match each dump format and cover clean-code, security, performance, error handling, concurrency, and codebase explainers.
+**Repo:** [`goproject-all-in-one`](https://github.com/Rigsto/goproject-all-in-one) · **Tool:** `golanganalyzer`
 
-## Why this exists
+Pack a whole project into **one text dump** for AI code review — with paths and line numbers the model can cite.
 
-AI reviewers work better when they see the whole project in one place, with paths and line numbers they can cite. GolangAnalyzer builds that dump locally — you choose fidelity vs. token size, then pair the output with a prompt.
+```text
+your repo  →  golanganalyzer flatten|minify  →  paste into ChatGPT / Claude / local LLM
+                 + matching prompt from prompt/
+```
 
 | Mode | Best for | Output |
 |------|----------|--------|
-| `flatten` | Small/medium trees, exact line citations | Full file bodies with `===== FILE path \| LINES 1-n` headers |
-| `minify` | Larger trees / tighter context windows | Comments & blank lines removed; `@MAP` maps dump lines → original lines |
+| `flatten` | Exact citations, comments kept | Full bodies · `===== FILE path \| LINES 1-n` |
+| `minify` | Large trees / tight token budgets | Comments & blanks removed · `@MAP` dump→original lines |
 
-## Requirements
+Ready-made prompts cover clean-code, security, performance, error handling, concurrency, and codebase explainers.
 
-- [Go](https://go.dev/dl/) 1.22+ (module targets a recent toolchain)
-- A project directory you want to analyze (any mix of supported extensions)
+## Install
 
-## Quick start
+**Go install** (needs Go 1.22+):
 
 ```bash
-# from this repo
-go build -o golanganalyzer .
-
-# pack a project (full source)
-./golanganalyzer flatten --source /path/to/your/project
-
-# or pack a compressed dump
-./golanganalyzer minify --source /path/to/your/project
+go install github.com/Rigsto/goproject-all-in-one@latest
 ```
 
-Defaults write to `result/flatten.txt` or `result/minify.txt`. Then open a matching prompt from `prompt/flatten/` or `prompt/minify/`, paste the dump after it, and run the review in your AI tool of choice.
+The binary is named after the module folder (`goproject-all-in-one`). Rename it if you prefer:
 
-For step-by-step flows (config tweaks, custom output paths, which prompt to pick), see **[HOW-TO-USE.md](HOW-TO-USE.md)**.
+```bash
+# Unix
+mv "$(go env GOPATH)/bin/goproject-all-in-one" "$(go env GOPATH)/bin/golanganalyzer"
+
+# Windows PowerShell
+Move-Item "$(go env GOPATH)\bin\goproject-all-in-one.exe" "$(go env GOPATH)\bin\golanganalyzer.exe"
+```
+
+**From source:**
+
+```bash
+git clone https://github.com/Rigsto/goproject-all-in-one.git
+cd goproject-all-in-one
+go build -o golanganalyzer .
+```
+
+**Releases:** download a prebuilt binary from [Releases](https://github.com/Rigsto/goproject-all-in-one/releases) once published.
+
+## 30-second demo
+
+```bash
+go build -o golanganalyzer .
+./golanganalyzer flatten --source testdata/sample --out result/demo-flatten.txt
+./golanganalyzer minify  --source testdata/sample --out result/demo-minify.txt
+```
+
+**Flatten** (body line *N* = original line *N*):
+
+```text
+===== FILE main.go | LINES 1-13
+package main
+...
+func main() {
+	// entry
+	greet("world")
+}
+```
+
+**Minify** (comments gone; `@MAP` keeps original line citations):
+
+```text
+@FILE main.go
+@ORIG 1-13
+@MAP 1>1,2>3,3>6,4>7,5>8,6>10,7>12,8>13
+package main
+import "fmt"
+func greet(name string) {
+	fmt.Println("hello", name)
+}
+func main() {
+	greet("world")
+}
+```
+
+## Workflow
+
+1. Build or install the CLI (`golanganalyzer`).
+2. Run `flatten` or `minify` on your project (`--source`).
+3. Open a prompt from `prompt/flatten/` or `prompt/minify/` (same mode as the dump).
+4. Paste **prompt + dump** into your AI tool and ask for the review.
+
+Step-by-step flows (config, custom `--out`, which prompt): **[HOW-TO-USE.md](HOW-TO-USE.md)**.
 
 ## Commands
 
@@ -116,17 +174,15 @@ Each prompt describes **one** input format only — use `flatten/` with a flatte
 ## Layout
 
 ```text
-golanganalyzer/
-├── main.go              # CLI (cobra): flatten / minify
-├── config.yaml          # default include/ignore rules
-├── config/              # YAML load + validate
-├── flatten/             # full-source dump writer
-├── minify/              # strip comments/blanks + line maps
-├── internal/collect/    # walk tree, apply extensions & ignores
-├── prompt/              # AI review prompts (flatten/ and minify/)
-├── testdata/sample/     # tiny sample project
-├── HOW-TO-USE.md        # end-to-end usage flows
-└── result/              # default output dir (gitignored)
+goproject-all-in-one/          # GitHub repository
+├── main.go                    # CLI binary: golanganalyzer
+├── config.yaml
+├── config/ · flatten/ · minify/
+├── internal/collect/ · internal/text/
+├── prompt/                    # AI review prompts
+├── testdata/sample/
+├── HOW-TO-USE.md
+└── result/                    # default output (gitignored)
 ```
 
 ## Architecture
@@ -153,14 +209,16 @@ CLI (main.go)
 
 | Package | Role |
 |---------|------|
-| `main` | Cobra CLI; loads config, dispatches flatten/minify, prints the output path |
-| [`config`](config/config.go) | Parse/validate `config.yaml` (`extensions`, `ignore`) |
-| [`internal/collect`](internal/collect/collect.go) | Shared tree walk, ignore matching, sorted file list |
-| [`flatten`](flatten/flatten.go) | Full-source dump; body line N = original line N |
-| [`minify`](minify/minify.go) | Stripped dump; [`Strip`](minify/strip.go) builds `@MAP` |
+| `main` | Cobra CLI; loads config, dispatches flatten/minify |
+| [`config`](config/config.go) | Parse/validate `config.yaml` |
+| [`internal/collect`](internal/collect/collect.go) | Tree walk, ignore matching, sorted files |
+| [`flatten`](flatten/flatten.go) | Full-source dump |
+| [`minify`](minify/minify.go) | Stripped dump + [`Strip`](minify/strip.go) / `@MAP` |
 
-Package and exported APIs have Go doc comments (`go doc ./...`).
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports and ideas welcome via [Issues](https://github.com/Rigsto/goproject-all-in-one/issues).
 
 ## License
 
-Use and modify as needed for your own analysis workflows.
+[MIT](LICENSE) © Rigsto

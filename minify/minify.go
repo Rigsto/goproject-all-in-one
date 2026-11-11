@@ -18,9 +18,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golanganalyzer/config"
-	"golanganalyzer/internal/collect"
-	"golanganalyzer/internal/text"
+	"github.com/Rigsto/goproject-all-in-one/config"
+	"github.com/Rigsto/goproject-all-in-one/internal/collect"
+	"github.com/Rigsto/goproject-all-in-one/internal/text"
 )
 
 // MinifyWithConfig writes a minified dump of sourcePath into targetFile using

@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"golanganalyzer/config"
+	"github.com/Rigsto/goproject-all-in-one/config"
 )
 
 // File is a collected source file ready for writing into a dump.

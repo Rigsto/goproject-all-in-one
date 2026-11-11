@@ -17,9 +17,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"golanganalyzer/config"
-	"golanganalyzer/flatten"
-	"golanganalyzer/minify"
+	"github.com/Rigsto/goproject-all-in-one/config"
+	"github.com/Rigsto/goproject-all-in-one/flatten"
+	"github.com/Rigsto/goproject-all-in-one/minify"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module golanganalyzer
+module github.com/Rigsto/goproject-all-in-one
 
 go 1.26.10
 

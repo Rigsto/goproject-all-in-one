@@ -16,9 +16,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golanganalyzer/config"
-	"golanganalyzer/internal/collect"
-	"golanganalyzer/internal/text"
+	"github.com/Rigsto/goproject-all-in-one/config"
+	"github.com/Rigsto/goproject-all-in-one/internal/collect"
+	"github.com/Rigsto/goproject-all-in-one/internal/text"
 )
 
 // FlattenWithConfig writes a full-source dump of sourcePath into targetFile

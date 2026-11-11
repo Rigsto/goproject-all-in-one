@@ -2,15 +2,28 @@
 
 End-to-end flows for building a project dump and reviewing it with an AI. Skim the [README](README.md) for what the tool does; this guide is for running it against *your* needs.
 
-## 1. Build the CLI
+## 1. Install or build the CLI
 
-From the GolangAnalyzer repo root:
+**Install** (from the public repo [`goproject-all-in-one`](https://github.com/Rigsto/goproject-all-in-one)):
+
+```bash
+go install github.com/Rigsto/goproject-all-in-one@latest
+```
+
+Rename the binary to `golanganalyzer` if you want the short tool name (optional):
+
+```bash
+# Unix
+mv "$(go env GOPATH)/bin/goproject-all-in-one" "$(go env GOPATH)/bin/golanganalyzer"
+```
+
+**Or build** from the repo root:
 
 ```bash
 go build -o golanganalyzer .
 ```
 
-On Windows PowerShell you can use:
+On Windows PowerShell:
 
 ```powershell
 go build -o golanganalyzer.exe .
